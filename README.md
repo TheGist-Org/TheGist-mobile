@@ -1,6 +1,6 @@
-# GistPin Mobile
+# The Gist Mobile
 
-The mobile client for GistPin — a location-first interface for posting and browsing hyperlocal gists on iOS and Android.
+The mobile client for Gist — a location-first interface for posting and browsing hyperlocal gists on iOS and Android.
 
 ---
 
@@ -8,7 +8,7 @@ The mobile client for GistPin — a location-first interface for posting and bro
 
 - Detects the user's current location and shows nearby gists on a map and list view
 - Lets users post a new gist at their current (or pinned) location
-- Communicates exclusively with `gistpin-backend` — no direct blockchain calls from the app
+- Communicates exclusively with `gist-backend` — no direct blockchain calls from the app
 
 This app is a **pure client**. All IPFS pinning and Soroban transaction logic lives in the backend.
 
@@ -34,7 +34,7 @@ This app is a **pure client**. All IPFS pinning and Soroban transaction logic li
 ## Project Layout
 
 ```
-gistpin-mobile/
+gist-mobile/
 ├── app/                         # Expo Router file-based routing
 │   ├── _layout.tsx              # Root layout (providers, navigation)
 │   ├── index.tsx                # Home screen — shows MapScreen
@@ -54,7 +54,7 @@ gistpin-mobile/
 │   └── ui/                      # Shared primitives (Button, Input, etc.)
 ├── lib/
 │   ├── api/
-│   │   └── client.ts            # Typed Axios instance for gistpin-backend
+│   │   └── client.ts            # Typed Axios instance for gist-backend
 │   ├── hooks/
 │   │   ├── useGists.ts          # TanStack Query hooks
 │   │   └── useCurrentLocation.ts # expo-location wrapper
@@ -82,7 +82,7 @@ gistpin-mobile/
 - **pnpm** (recommended) or npm/yarn
 - **Expo Go** app on your phone — [iOS](https://apps.apple.com/app/expo-go/id982107779) / [Android](https://play.google.com/store/apps/details?id=host.exp.exponent)
 - OR an iOS Simulator (Xcode, macOS only) / Android Emulator (Android Studio)
-- A running instance of `gistpin-backend` (see that repo's README)
+- A running instance of `gist-backend` (see that repo's README)
 
 ---
 
@@ -91,8 +91,8 @@ gistpin-mobile/
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/gistpin/gistpin-mobile.git
-cd gistpin-mobile
+git clone https://github.com/gist-app/gist-mobile.git
+cd gist-mobile
 pnpm install
 ```
 
@@ -250,13 +250,26 @@ eas build --platform ios
 
 For dev/internal testing, use `eas build --profile preview` which skips store submission.
 
+---
 
+## Useful Scripts
+
+| Command | Description |
+|---|---|
+| `pnpm start` | Start Expo dev server |
+| `pnpm android` | Open in Android emulator |
+| `pnpm ios` | Open in iOS simulator |
+| `pnpm lint` | ESLint |
+| `pnpm type-check` | TypeScript check |
+| `pnpm test` | Jest tests |
+
+---
 
 ## Contribution Guidelines
 
 - Keep screen components focused — no direct API calls inside screen files.
 - Centralise all networking in `lib/api/`.
 - Use TanStack Query for all remote data (no raw `useEffect` + `setState` for fetching).
-- When changing the API contract, coordinate with `gistpin-backend` first.
+- When changing the API contract, coordinate with `gist-backend` first.
 
-For global contribution rules: [gistpin-meta/CONTRIBUTING.md](https://github.com/gistpin/gistpin-meta/blob/main/CONTRIBUTING.md)
+For global contribution rules: [gist-meta/CONTRIBUTING.md](https://github.com/gist-app/gist-meta/blob/main/CONTRIBUTING.md)
