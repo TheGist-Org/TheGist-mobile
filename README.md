@@ -1,99 +1,68 @@
-# The Gist Mobile
+# TheGist Mobile
 
-The mobile client for Gist — a location-first interface for posting and browsing hyperlocal gists on iOS and Android.
+Native iOS and Android app for the TheGist protocol — location-first Web3 client for posting and browsing anonymous hyperlocal gists.
 
----
-
-## What This Repo Does
-
-- Detects the user's current location and shows nearby gists on a map and list view
-- Lets users post a new gist at their current (or pinned) location
-- Communicates exclusively with `gist-backend` — no direct blockchain calls from the app
-
-This app is a **pure client**. All IPFS pinning and Soroban transaction logic lives in the backend.
+Connect via Freighter mobile or WalletConnect. Post gists tied to your GPS location. Browse what people are saying around you right now.
 
 ---
 
-## Tech Stack
+## How It Works
+
+The mobile app follows the same trustless flow as the web client — no server mediates your identity or your posts.
+
+```
+1. Connect wallet via Freighter mobile or WalletConnect v2
+2. Compose a gist at your current GPS location
+3. Content pinned to IPFS → CID returned
+4. Transaction (CID + geohash + author pubkey) signed by wallet
+5. Signed transaction submitted directly to Soroban GistRegistry
+6. Map pulls nearby gists from GraphQL indexer (TheGist-API)
+7. Gist appears on the map for anyone in range
+```
+
+---
+
+## Stack
 
 | Layer | Choice |
-|---|---|
-| Framework | React Native via **Expo** (SDK 51+) |
+|-------|--------|
+| Framework | Expo SDK 51 |
 | Language | TypeScript |
-| Navigation | Expo Router (file-based, built on React Navigation) |
-| Map | `react-native-maps` (via `expo-maps` or direct) |
-| Data fetching | TanStack Query (React Query v5) |
-| HTTP client | Axios |
-| Forms | React Hook Form + Zod |
-| Location | `expo-location` |
-| Storage (local) | `expo-secure-store` / `@react-native-async-storage/async-storage` |
-| Testing | Jest + React Native Testing Library |
+| Navigation | Expo Router |
+| Map | Mapbox React Native |
+| Wallet | WalletConnect v2 / Freighter mobile |
+| Blockchain | Stellar SDK |
+| Data fetching | Apollo Client |
+| GraphQL | TheGist-API |
 
 ---
 
-## Project Layout
+## Key Features
 
-```
-gist-mobile/
-├── app/                         # Expo Router file-based routing
-│   ├── _layout.tsx              # Root layout (providers, navigation)
-│   ├── index.tsx                # Home screen — shows MapScreen
-│   ├── (tabs)/
-│   │   ├── _layout.tsx          # Tab navigator layout
-│   │   ├── map.tsx              # Map tab
-│   │   └── list.tsx             # List tab (nearby gists)
-│   └── gist/
-│       └── [id].tsx             # Gist detail screen
-├── components/
-│   ├── map/
-│   │   ├── GistMap.tsx          # MapView with gist markers
-│   │   └── GistMapMarker.tsx    # Individual marker component
-│   ├── gists/
-│   │   ├── GistCard.tsx         # Single gist row / card
-│   │   └── CreateGistSheet.tsx  # Bottom sheet for creating a gist
-│   └── ui/                      # Shared primitives (Button, Input, etc.)
-├── lib/
-│   ├── api/
-│   │   └── client.ts            # Typed Axios instance for gist-backend
-│   ├── hooks/
-│   │   ├── useGists.ts          # TanStack Query hooks
-│   │   └── useCurrentLocation.ts # expo-location wrapper
-│   └── utils/
-│       └── geo.ts               # Geo helpers
-├── types/
-│   └── gist.ts                  # Shared TypeScript types (mirror of web)
-├── constants/
-│   └── config.ts                # API base URL, map defaults, etc.
-├── assets/                      # Images, fonts, icons
-├── .env.example                 # Environment template
-├── app.json                     # Expo config
-├── app.config.ts                # Dynamic Expo config (reads .env)
-├── babel.config.js
-├── tsconfig.json
-├── package.json
-└── README.md
-```
+- **GPS-based gist discovery** — the map auto-centers on your location and loads gists within configurable radius
+- **Camera integration** — attach images to gists; photos are stored on IPFS, only the CID goes on-chain
+- **Push notifications** — opt in to notifications for new gists near saved locations
+- **Offline map caching** — map tiles cached locally so the map loads even with a weak connection
+- **Anonymous by default** — no username or profile; author Stellar address visible on-chain only
+- **24h expiry** — gists expire automatically; the map reflects current on-chain state
 
 ---
 
-## Prerequisites
+## Local Setup
 
-- **Node.js** >= 20 — [nodejs.org](https://nodejs.org)
-- **pnpm** (recommended) or npm/yarn
-- **Expo Go** app on your phone — [iOS](https://apps.apple.com/app/expo-go/id982107779) / [Android](https://play.google.com/store/apps/details?id=host.exp.exponent)
-- OR an iOS Simulator (Xcode, macOS only) / Android Emulator (Android Studio)
-- A running instance of `gist-backend` (see that repo's README)
+### Prerequisites
 
----
-
-## Local Development
+- Node.js >= 20
+- [Expo CLI](https://docs.expo.dev/get-started/installation/): `npm install -g expo-cli`
+- iOS Simulator (Xcode, macOS only) or Android Emulator (Android Studio)
+- OR [Expo Go](https://expo.dev/go) on a physical device for quick iteration
 
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/gist-app/gist-mobile.git
-cd gist-mobile
-pnpm install
+git clone https://github.com/TheGist-Org/TheGist-mobile.git
+cd TheGist-mobile
+npm install
 ```
 
 ### 2. Environment variables
@@ -102,143 +71,49 @@ pnpm install
 cp .env.example .env
 ```
 
-Open `.env` and fill in:
-
 ```env
-# For emulator on the same machine as backend:
-API_BASE_URL=http://10.0.2.2:3000   # Android emulator
-# API_BASE_URL=http://localhost:3000  # iOS simulator
-
-# For a real device on the same LAN as your backend:
-# API_BASE_URL=http://192.168.x.x:3000
-
-# Default map center (lon, lat)
-DEFAULT_LAT=5.6037
-DEFAULT_LNG=-0.1870
+EXPO_PUBLIC_SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+EXPO_PUBLIC_CONTRACT_ID=<your_deployed_gist_registry_contract_id>
+EXPO_PUBLIC_MAPBOX_TOKEN=pk.eyJ1Ijoixxxxxxx...
+EXPO_PUBLIC_GRAPHQL_URL=http://localhost:4000/graphql
 ```
 
-> **Tip:** On Android Emulator, `localhost` on your machine maps to `10.0.2.2`. On iOS Simulator, `localhost` works directly.
+Get a free Mapbox token at [mapbox.com](https://www.mapbox.com).
 
-### 3. Start the Expo dev server
+### 3. Start the dev server
 
 ```bash
-pnpm start
+expo start
 ```
 
-Then:
-- Press **`a`** to open in Android Emulator
-- Press **`i`** to open in iOS Simulator
-- Scan the QR code with **Expo Go** on a real device
+### 4. Run on a simulator
+
+```bash
+# iOS Simulator (macOS only)
+expo start --ios
+
+# Android Emulator
+expo start --android
+```
+
+### 5. Run on a physical device
+
+Scan the QR code shown by `expo start` with **Expo Go** on your phone. Ensure your device and development machine are on the same network.
 
 ---
 
-## Key Patterns
+## Environment Variable Notes
 
-### API client
-
-All network calls go through `lib/api/client.ts`. Never call `fetch` or `axios` directly from components.
-
-```ts
-// lib/api/client.ts
-import axios from 'axios';
-import { API_BASE_URL } from '@/constants/config';
-import type { Gist, CreateGistDto, GistQueryParams, GistsResponse } from '@/types/gist';
-
-export const api = axios.create({ baseURL: API_BASE_URL });
-
-export const gistsApi = {
-  getNearby: (params: GistQueryParams) =>
-    api.get<GistsResponse>('/gists', { params }),
-
-  create: (data: CreateGistDto) =>
-    api.post<Gist>('/gists', data),
-};
-```
-
-### Location permissions
-
-Always request permission before accessing location. Expo handles this cleanly:
-
-```ts
-// lib/hooks/useCurrentLocation.ts
-import * as Location from 'expo-location';
-import { useEffect, useState } from 'react';
-
-export function useCurrentLocation() {
-  const [location, setLocation] = useState<Location.LocationObject | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setError('Location permission denied');
-        return;
-      }
-      const loc = await Location.getCurrentPositionAsync({});
-      setLocation(loc);
-    })();
-  }, []);
-
-  return { location, error };
-}
-```
-
-### Map with gist markers
-
-```tsx
-// components/map/GistMap.tsx (simplified)
-import MapView, { Marker } from 'react-native-maps';
-import { useGists } from '@/lib/hooks/useGists';
-import { useCurrentLocation } from '@/lib/hooks/useCurrentLocation';
-
-export default function GistMap() {
-  const { location } = useCurrentLocation();
-  const lat = location?.coords.latitude ?? 5.6037;
-  const lon = location?.coords.longitude ?? -0.1870;
-  const { data } = useGists(lat, lon);
-
-  return (
-    <MapView
-      style={{ flex: 1 }}
-      initialRegion={{ latitude: lat, longitude: lon, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
-    >
-      {data?.data.map(gist => (
-        <Marker
-          key={gist.gistId}
-          coordinate={{ latitude: gist.lat, longitude: gist.lon }}
-          title={gist.text.slice(0, 60)}
-        />
-      ))}
-    </MapView>
-  );
-}
-```
+- `EXPO_PUBLIC_*` variables are bundled into the app at build time and visible to the device — never put secrets here.
+- For Android Emulator, use `http://10.0.2.2:4000` for localhost services. For iOS Simulator, `http://localhost:4000` works directly.
 
 ---
 
-## Expo Router Notes
-
-This app uses **Expo Router** (file-based routing). The `app/` directory maps directly to screens:
-
-| File | Route / Screen |
-|---|---|
-| `app/index.tsx` | Initial screen (redirects to map tab) |
-| `app/(tabs)/map.tsx` | Map tab |
-| `app/(tabs)/list.tsx` | List tab |
-| `app/gist/[id].tsx` | Gist detail — navigated to via `router.push('/gist/42')` |
-
----
-
-## Building for Production
-
-Expo uses EAS (Expo Application Services) for production builds:
+## Production Builds
 
 ```bash
 # Install EAS CLI
 npm install -g eas-cli
-
-# Log in to Expo
 eas login
 
 # Build for Android
@@ -248,28 +123,65 @@ eas build --platform android
 eas build --platform ios
 ```
 
-For dev/internal testing, use `eas build --profile preview` which skips store submission.
+Use `--profile preview` for internal testing builds that skip store submission.
+
+---
+
+## Project Layout
+
+```
+TheGist-mobile/
+├── app/                          # Expo Router file-based screens
+│   ├── _layout.tsx               # Root layout (wallet provider, Apollo)
+│   ├── (tabs)/
+│   │   ├── map.tsx               # Map tab
+│   │   └── nearby.tsx            # List tab — gists sorted by distance
+│   └── gist/[id].tsx             # Gist detail screen
+├── components/
+│   ├── map/
+│   │   ├── GistMap.tsx           # Mapbox wrapper
+│   │   └── GistMapPin.tsx        # Individual map marker
+│   ├── gists/
+│   │   ├── GistCard.tsx          # Gist row card
+│   │   └── PostGistSheet.tsx     # Bottom sheet: compose + sign
+│   └── wallet/
+│       └── ConnectSheet.tsx      # WalletConnect / Freighter connect
+├── lib/
+│   ├── soroban.ts                # Transaction building and submission
+│   ├── ipfs.ts                   # IPFS pinning
+│   └── graphql/                  # Apollo Client setup and queries
+├── .env.example
+├── app.json
+├── app.config.ts
+└── README.md
+```
 
 ---
 
 ## Useful Scripts
 
 | Command | Description |
-|---|---|
-| `pnpm start` | Start Expo dev server |
-| `pnpm android` | Open in Android emulator |
-| `pnpm ios` | Open in iOS simulator |
-| `pnpm lint` | ESLint |
-| `pnpm type-check` | TypeScript check |
-| `pnpm test` | Jest tests |
+|---------|-------------|
+| `expo start` | Start Expo dev server |
+| `expo start --ios` | Open in iOS Simulator |
+| `expo start --android` | Open in Android Emulator |
+| `npm run lint` | ESLint |
+| `npm run type-check` | TypeScript check |
+| `npm test` | Jest tests |
 
 ---
 
-## Contribution Guidelines
+## Contributing
 
-- Keep screen components focused — no direct API calls inside screen files.
-- Centralise all networking in `lib/api/`.
-- Use TanStack Query for all remote data (no raw `useEffect` + `setState` for fetching).
-- When changing the API contract, coordinate with `gist-backend` first.
+- All Soroban interactions go through `lib/soroban.ts` — no raw SDK calls in screen files.
+- IPFS pinning lives in `lib/ipfs.ts`.
+- Location access must always be requested via `expo-location` with a user-visible permission prompt.
+- Coordinate any GraphQL query shape changes with TheGist-API.
 
-For global contribution rules: [gist-meta/CONTRIBUTING.md](https://github.com/gist-app/gist-meta/blob/main/CONTRIBUTING.md)
+For global contribution rules, see [CONTRIBUTING.md](https://github.com/TheGist-Org/theGist-Meta/blob/main/CONTRIBUTING.md).
+
+---
+
+## License
+
+MIT
